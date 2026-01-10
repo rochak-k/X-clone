@@ -1,6 +1,7 @@
 import express from 'express';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js'
+import postRoutes from './routes/post.routes.js'
 import dotenv from "dotenv";
 import connectMongoDB from './db/db.js';
 import cookieParser from 'cookie-parser';
@@ -18,6 +19,7 @@ app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use('/auth', authRoutes)
 app.use('/user', userRoutes)
+app.use('/post', postRoutes)
 app.listen(PORT,()=>{
     console.log(`Server is running on port ${PORT}`);
     connectMongoDB();
