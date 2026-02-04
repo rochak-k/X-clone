@@ -18,10 +18,10 @@ const PORT = process.env.PORT
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
-app.use('/auth', authRoutes)
-app.use('/user', userRoutes)
-app.use('/post', postRoutes)
-app.use('/notification',notificationRoutes)
+app.use('/api/auth', authRoutes)
+app.use('/api/user', userRoutes)
+app.use('/api/post', postRoutes)
+app.use('/api/notification',notificationRoutes)
 app.listen(PORT,()=>{
     console.log(`Server is running on port ${PORT}`);
     connectMongoDB();
