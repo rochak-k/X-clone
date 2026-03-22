@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import EditProfileModal from "./EditProfileModal";
-
 import { POSTS } from "../../utils/db/dummy";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery , useQueryClient} from "@tanstack/react-query";
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
 import { formatMemberSinceDate } from "../../utils/date";
+import useFollow from "../../hooks/useFollow";
+import toast from "react-hot-toast";
+
 const ProfilePage = () => {
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
@@ -19,7 +20,9 @@ const ProfilePage = () => {
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
   const {username} = useParams();
-  const isMyProfile = true;
+  const queryclient = useQueryClient()
+  const {follow , isPending} = useFollow()
+  const {data : authUser} = useQuery({queryKey : ["authUser"]})
   const{data : user , isLoading , refetch , isRefetching} = useQuery({
       queryKey : ["user"],
       queryFn : async () => {
@@ -36,7 +39,42 @@ const ProfilePage = () => {
       },
 
   })
+ const {mutate : updateProfile , isPending : isUpdating} = useMutation({
+  mutationFn : async () => {
+    try {
+      const res = await fetch ("/api/user/update" , {
+        method : "POST" , 
+        headers : {
+          "Content-Type" : "application/json"
+        },
+        body : JSON.stringify({
+          profilePicture : profileImg ,
+          coverPicture : coverImg
+        })
+      })
+      const data = await res.json()
+      if(!res.ok) {
+        throw new Error (data.error || "Something went wrong")
+      }
+      return data;
+    } catch (error) {
+      throw new Error (error)
+    }
+  },
+  onSuccess : () => {
+    toast.success("Profile updated successfully")
+    Promise.all([
+      queryclient.invalidateQueries({queryKey : ['authUser']}),
+      queryclient.invalidateQueries({queryKey : ['user' ]})
+    ])
+  },
+  onError : (error) => {  
+    toast.error(error.message)
+  }
+ })
+  const isMyProfile = authUser._id == user?._id 
   const membersincedate = formatMemberSinceDate(user?.createdAt)
+  const isFollowing = authUser?.following.includes(user?._id)
   const handleImgChange = (e, state) => {
     const file = e.target.files[0];
     if (file) {
@@ -127,28 +165,30 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="flex justify-end px-4 mt-5">
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authUser={authUser} />}
                 {!isMyProfile && (
                   <button
                     className="btn btn-outline rounded-full btn-sm"
-                    onClick={() => alert("Followed successfully")}
+                    onClick={() => follow(user._id)}
                   >
-                    Follow
+                    {isPending && "Loading..."}
+                    {!isPending && isFollowing && "Unfollow"}
+                    {!isPending && !isFollowing && "Follow"}
                   </button>
                 )}
                 {(coverImg || profileImg) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => alert("Profile updated successfully")}
+                    onClick={() => updateProfile() }
                   >
-                    Update
+                    {isUpdating ? "Updating..." : "Save"}
                   </button>
                 )}
               </div>
 
               <div className="flex flex-col gap-4 mt-14 px-4">
                 <div className="flex flex-col">
-                  <span className="font-bold text-lg">{user?.fullName}</span>
+                  <span className="font-bold text-lg">{user?.fullname}</span>
                   <span className="text-sm text-slate-500">
                     @{user?.username}
                   </span>
