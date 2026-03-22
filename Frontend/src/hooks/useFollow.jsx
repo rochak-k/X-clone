@@ -19,7 +19,8 @@ const useFollow = () => {
    },
  onSuccess : () => {
  queryClient.invalidateQueries({queryKey : ['suggestedUsers']})
-queryClient.invalidateQueries({queryKey : ['authUser']})
+ queryClient.invalidateQueries({queryKey : ['authUser']})
+ queryClient.invalidateQueries({queryKey : ['user']})
  },
  onError : (error) => {
  toast.error(error.message)
