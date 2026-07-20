@@ -56,7 +56,6 @@ const Post = ({ post }) => {
       }
     },
     onSuccess : () => {
-      toast.success("Post liked successfully")
       queryClient.invalidateQueries({queryKey : ['posts']})
     }
   })
